@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bookly
 
-## Getting Started
+Веб-приложение для онлайн-записи клиентов и управления расписанием салона красоты или студии: админ-панель для команды и публичная страница записи для клиентов (без регистрации).
 
-First, run the development server:
+> Учебный/портфолио-проект. Демо-данные (салон «Лаванда», клиенты, телефоны, email) полностью вымышлены.
+
+![Дашборд](docs/screenshots/dashboard.png)
+
+## Возможности
+
+**Админ-панель** (после входа)
+- **Дашборд:** записи сегодня, новые клиенты, выручка и записи за 14 дней, график записей, популярные услуги, ближайшие записи. Все цифры считаются из базы.
+- **Календарь:** вид «День» и «Неделя», фильтр по специалисту, создание записи кликом по свободному времени, перенос перетаскиванием, проверка пересечений.
+- **Записи:** создание, редактирование, отмена, пять статусов (ожидает, подтверждена, завершена, отменена, клиент не пришёл), поиск и фильтры.
+- **Клиенты:** добавление, правка, удаление, поиск и фильтры, страница клиента с историей визитов.
+- **Услуги:** создание, правка, включение и отключение.
+- **Сотрудники:** специалисты, назначенные услуги, недельное расписание с перерывом, временное отключение.
+- **Настройки:** данные компании, часы работы, ссылка на публичную страницу записи.
+- **CSV-экспорт** клиентов и записей (владелец и администратор).
+- **Уведомления** о новых записях, в том числе онлайн.
+
+**Публичная онлайн-запись** `/book/<slug>`
+- услуга → специалист или «любой» → дата → свободное время → контакты → проверка → подтверждение → страница успеха;
+- свободное время считается в базе с учётом рабочего расписания, перерывов, длительности услуги и уже созданных записей; перед сохранением доступность проверяется повторно;
+- не раньше чем через час от текущего момента, не дальше 60 дней вперёд;
+- защита от спама: поле-ловушка, минимальное время заполнения, лимиты по IP, телефону и организации;
+- адаптирована под телефон.
+
+**Безопасность и роли**
+- Supabase Auth (email + пароль), защищённые маршруты;
+- роли **owner / admin / staff**, доступ к данным ограничен Row Level Security (политики в миграциях) — каждый видит только данные своей организации;
+- ключ `service_role` приложению не нужен и нигде не используется, браузер получает только публичный anon-ключ.
+
+## Технологии
+
+Next.js 16 (App Router, Server Components и Server Actions) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui (на Base UI) · Lucide · Recharts · Zod · Supabase (PostgreSQL, Auth, RLS) · Playwright · PGlite (тесты БД без Docker).
+
+## Скриншоты
+
+| Календарь | Записи |
+|---|---|
+| ![Календарь](docs/screenshots/calendar.png) | ![Записи](docs/screenshots/appointments.png) |
+| **Клиенты** | **Сотрудники** |
+| ![Клиенты](docs/screenshots/clients.png) | ![Сотрудники](docs/screenshots/staff.png) |
+
+Публичная запись на телефоне:
+
+| Услуга | Время | Проверка | Готово |
+|---|---|---|---|
+| <img src="docs/screenshots/booking-1-service.png" width="190"> | <img src="docs/screenshots/booking-2-time.png" width="190"> | <img src="docs/screenshots/booking-3-review.png" width="190"> | <img src="docs/screenshots/booking-4-success.png" width="190"> |
+
+Остальные страницы: [вход](docs/screenshots/login.png), [услуги](docs/screenshots/services.png), [настройки](docs/screenshots/settings.png), [дашборд на телефоне](docs/screenshots/mobile-dashboard.png). Скриншоты получены из реального приложения командой `npm run screenshots`.
+
+## Быстрый старт
+
+Нужны Node.js **22.18+** и проект Supabase (облачный или локальный).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repo-url> bookly && cd bookly
+npm install
+cp .env.example .env.local        # заполните две переменные Supabase (см. ниже)
+npm run dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Без Supabase (локальный стенд)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Чтобы посмотреть приложение без аккаунта Supabase и без Docker, есть эмулятор (миграции и seed настоящие, Auth и REST-слой упрощены):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run emulator                  # терминал 1: http://127.0.0.1:54321
+# терминал 2, .env.local:
+#   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY=any-value
+npm run dev
+```
+Вход: `alina@bookly.test` / `Password123!` (только локальный seed, см. [docs/DEMO.md](docs/DEMO.md)). Данные живут в памяти до перезапуска эмулятора.
 
-## Learn More
+## Настройка Supabase
 
-To learn more about Next.js, take a look at the following resources:
+1. Создайте проект на [supabase.com](https://supabase.com).
+2. **SQL Editor:** выполните по порядку файлы из [`supabase/migrations/`](supabase/migrations) (`20261106000001_schema.sql` … `20261108000001_public_booking.sql`).
+3. Демо-данные (необязательно, только для демо-проекта): выполните [`supabase/seed.sql`](supabase/seed.sql). Он создаёт двух вымышленных организаций, пользователей и записи; даты считаются от сегодняшнего дня. **Не запускайте seed на проекте с реальными пользователями:** он пересоздаёт демо-аккаунты.
+4. **Authentication → Providers → Email:** для демо можно отключить «Confirm email» (иначе регистрация потребует настроенную почту).
+5. **Authentication → URL Configuration:** Site URL — адрес сайта, Redirect URLs — `https://<домен>/auth/callback` (и `http://localhost:3000/auth/callback` для разработки).
+6. **Project Settings → API:** скопируйте Project URL и `anon` (publishable) key в переменные окружения. `service_role` **не копируйте** никуда.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Через Supabase CLI (локально, нужен Docker): `npx supabase start`, затем `npx supabase db reset` (применит миграции и seed). Этот путь в проекте не проверялся: Docker в среде разработки не использовался.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Подробности о таблицах, ролях и правах — в [supabase/README.md](supabase/README.md).
 
-## Deploy on Vercel
+## Переменные окружения
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Переменная | Обязательна | Описание |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | да | URL проекта Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | да | публичный (anon / publishable) ключ; безопасен для браузера, данные защищает RLS |
+| `NEXT_PUBLIC_SITE_URL` | нет | адрес сайта для ссылки подтверждения email |
+| `BOOKING_RATE_SALT` | нет | случайная строка-соль для хэша IP в лимитах публичной записи |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Шаблон — [`.env.example`](.env.example). Файлы `.env*` (кроме `.env.example`) исключены из Git.
+
+## Тесты
+
+```bash
+npm run test:db       # БД без браузера: RLS, роли, правила записи, публичная запись, логика (PGlite, 200+ проверок)
+npm run e2e           # Playwright: собирает приложение, поднимает эмулятор и проходит сценарии в браузере (62 теста)
+npm run e2e:report    # HTML-отчёт Playwright
+npm run lint && npm run typecheck
+```
+Браузерные тесты работают на production-сборке и локальном эмуляторе Supabase; первый запуск скачивает Chromium (`npx playwright install chromium`). Подробности — [TEST_REPORT.md](TEST_REPORT.md).
+
+## Развёртывание
+
+Пошаговая инструкция для Vercel + Supabase: [docs/DEPLOY.md](docs/DEPLOY.md). Сценарий демонстрации для заказчика: [docs/DEMO.md](docs/DEMO.md).
+
+## Структура проекта
+
+```
+src/
+  app/
+    (auth)/          вход и регистрация (server actions)
+    (app)/           админ-панель: dashboard, calendar, appointments, clients, services, staff, settings
+    book/[slug]/     публичная запись и страница успеха
+    api/export/      CSV-экспорт
+    auth/callback/   подтверждение email
+  components/
+    ui/              базовые компоненты shadcn/ui
+    layout/ shared/  оболочка, меню, формы-диалоги, общие блоки
+    dashboard/ calendar/ appointments/ clients/ services/ staff/ settings/ booking/ auth/
+  lib/
+    actions/         server actions (запись данных, валидация Zod)
+    data/            загрузка данных организации, сессия, выборки для дашборда
+    supabase/        клиенты Supabase (server, public) и защита маршрутов (proxy)
+  types/
+  proxy.ts           обновление сессии и защита маршрутов
+supabase/
+  migrations/        схема, RLS, правила записи, публичная запись
+  seed.sql           вымышленные демо-данные
+  tests/             тесты БД и локальный эмулятор Supabase
+e2e/                 Playwright-тесты и сценарий скриншотов
+docs/                DEPLOY.md, DEMO.md, скриншоты
+```
+
+## Что проверено, а что нет
+
+Проверено автоматически (production-сборка, локальный эмулятор Supabase с настоящими миграциями и RLS): авторизация, клиенты, услуги, сотрудники, записи и календарь, публичная запись (включая мобильную версию), адаптивность, отсутствие ошибок в консоли и сети, TypeScript, ESLint, сборка.
+
+**Не проверено:** работа на настоящем проекте Supabase (облачном или через CLI) и развёртывание на Vercel — инструкции составлены по документации, но реальный деплой не выполнялся. Перед публикацией выполните сценарий из [docs/DEMO.md](docs/DEMO.md) на своём окружении.
+
+## Известные ограничения
+
+- Нет писем и SMS клиентам (подтверждения, напоминания); онлайн-запись создаётся со статусом «Ожидает подтверждения», администратор подтверждает её вручную.
+- Клиент не может сам отменить или перенести запись.
+- Нет публичной главной страницы: `/` ведёт в админ-панель (или на вход).
+- Перенос записи перетаскиванием работает с мышью; на сенсорных экранах используйте форму «Изменить».
+- Лимит по IP в публичной записи опирается на заголовок `x-forwarded-for` (на Vercel задаётся платформой); лимиты по телефону и организации от него не зависят.
+- Один часовой пояс на организацию (по умолчанию `Europe/Moscow`), одна смена и один перерыв в день на специалиста.
+- Списки записей показывают последние 90 дней и будущие; клиентская статистика считается в этом же окне (CSV и страница клиента читают всю историю).
+- Для несуществующего `/book/<slug>` показывается «не найдено», но код ответа 200 (потоковая отрисовка Next.js).

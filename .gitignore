@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# но шаблон переменных коммитим
+!.env.example
+
+# playwright
+/e2e-results/
+/e2e-report/
+/playwright-report/
