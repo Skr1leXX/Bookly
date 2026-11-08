@@ -14,7 +14,8 @@
     "e2e:report": "playwright show-report e2e-report",
     "test": "npm run test:db",
     "screenshots": "playwright test -c playwright.screenshots.config.ts",
-    "demo:reset-sql": "node scripts/make-demo-reset.mjs"
+    "demo:reset-sql": "node scripts/make-demo-reset.mjs",
+    "demo:gif": "playwright test -c playwright.screenshots.config.ts -g \"booking gif\" && node scripts/make-gif.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -41,6 +42,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "gifenc": "^1.0.3",
+    "pngjs": "^7.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

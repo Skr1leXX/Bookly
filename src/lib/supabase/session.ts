@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "./env";
 
 const PUBLIC_PATHS = ["/login", "/register", "/auth", "/book"]; // /book: public online booking, no account needed
+const PUBLIC_EXACT = ["/"]; // the landing page
 
 /** Refreshes the auth cookie on every request and gates the app behind a login. */
 export async function updateSession(request: NextRequest) {
@@ -26,7 +27,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  const isPublic = PUBLIC_EXACT.includes(pathname) || PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
   const target = !user && !isPublic ? "/login" : user && (pathname === "/login" || pathname === "/register") ? "/dashboard" : null;
 
   if (target) {

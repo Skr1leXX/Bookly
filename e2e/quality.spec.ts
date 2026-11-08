@@ -56,3 +56,31 @@ test.describe("console and network", () => {
     }
   });
 });
+
+test.describe("landing page", () => {
+  test("is public, links work and nothing is broken", async ({ page }) => {
+    await open(page, "/");
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Онлайн-запись и расписание");
+    await expect(page.getByText("pavel@bookly.test")).toBeVisible();
+    for (const img of await page.locator("main img").all()) {
+      await img.scrollIntoViewIfNeeded();
+      await expect(img).toHaveJSProperty("complete", true);
+      expect(await img.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
+    }
+    await expect(page.getByRole("link", { name: /Исходный код на GitHub/ })).toHaveAttribute("href", /github\.com\/Skr1leXX\/Bookly/);
+    await page.getByRole("link", { name: "Записаться как клиент" }).click();
+    await expect(page).toHaveURL(/\/book\/lavanda-demo/);
+    await page.goto("/");
+    await page.getByRole("link", { name: "Открыть админ-панель" }).click();
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  for (const width of [320, 390, 768, 1280]) {
+    test(`fits ${width}px without sideways scroll`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await open(page, "/");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+  }
+});

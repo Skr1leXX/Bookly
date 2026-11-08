@@ -66,3 +66,48 @@ test.describe("screenshots", () => {
     await context.close();
   });
 });
+
+// Frames for docs/booking-demo.gif (`npm run demo:gif`): the whole public booking scenario on a phone, step by step.
+test.describe("booking gif", () => {
+  test("public booking scenario frames", async ({ browser }) => {
+    const fs = await import("node:fs");
+    const dir = path.join(__dirname, "..", "docs", ".frames");
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+    let n = 0;
+    const frame = async (page: import("@playwright/test").Page) => {
+      await page.waitForTimeout(250);
+      fs.writeFileSync(path.join(dir, `${String(++n).padStart(2, "0")}.png`), await page.screenshot({ animations: "disabled" }));
+    };
+
+    const context = await browser.newContext({ viewport: { width: 390, height: 780 }, deviceScaleFactor: 2, locale: "ru-RU", timezoneId: "Europe/Moscow", extraHTTPHeaders: { "x-forwarded-for": "10.7.7.7" } });
+    const page = await context.newPage();
+    await open(page, "/book/lavanda-demo");
+    await frame(page);
+    await page.getByRole("button", { name: /Женская стрижка/ }).click();
+    await expect(page.getByRole("heading", { name: "Выберите специалиста" })).toBeVisible();
+    await frame(page);
+    await page.getByRole("button", { name: /Анна Ковалёва/ }).click();
+    let date = "";
+    for (let i = 4; i < 25; i++) if (new Date(`${day(i)}T00:00:00Z`).getUTCDay() === 2) { date = day(i); break; }
+    await page.getByLabel("Другая дата").fill(date);
+    await expect(page.locator("section button").first()).toBeVisible();
+    await page.locator("section").scrollIntoViewIfNeeded();
+    await frame(page);
+    await page.locator("section button").nth(4).click();
+    await expect(page.getByRole("heading", { name: "Ваши контакты" })).toBeVisible();
+    await page.getByLabel("Имя").fill("Ирина Петрова");
+    await page.getByLabel("Телефон").fill("+7 (900) 123-45-67");
+    await frame(page);
+    await page.getByLabel("Email").fill("irina@example.com");
+    await frame(page);
+    await page.getByRole("button", { name: "Далее" }).click();
+    await expect(page.getByRole("heading", { name: "Ваша запись" })).toBeVisible();
+    await frame(page);
+    await page.waitForTimeout(3200);
+    await page.getByRole("button", { name: "Подтвердить запись" }).click();
+    await expect(page.getByRole("heading", { name: /Запись создана/ })).toBeVisible();
+    await frame(page);
+    await context.close();
+  });
+});
