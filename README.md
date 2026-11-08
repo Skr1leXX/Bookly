@@ -15,7 +15,7 @@
 | Админ-панель (роль «администратор») | `/login`: `pavel@bookly.test` / `Password123!` |
 | Публичная онлайн-запись клиента | `/book/lavanda-demo` (вход не нужен) |
 
-Это общий демо-стенд с вымышленными данными: пароль публичный, а данные видят и могут менять все посетители. Пожалуйста, не вводите настоящие имена, телефоны и email. Если данные испортят, их возвращают повторным запуском `supabase/seed.sql`. Пошаговый сценарий проверки — [docs/DEMO.md](docs/DEMO.md).
+Это общий демо-стенд с вымышленными данными: пароль публичный, а данные видят и могут менять все посетители. Пожалуйста, не вводите настоящие имена, телефоны и email. Демо-данные автоматически возвращаются к исходным раз в сутки (задача pg_cron, [docs/DEPLOY.md](docs/DEPLOY.md)). Пошаговый сценарий проверки — [docs/DEMO.md](docs/DEMO.md).
 
 ## Возможности
 
@@ -89,7 +89,7 @@ npm run dev
 ## Настройка Supabase
 
 1. Создайте проект на [supabase.com](https://supabase.com).
-2. **SQL Editor:** выполните по порядку файлы из [`supabase/migrations/`](supabase/migrations) (`20261106000001_schema.sql` … `20261108000001_public_booking.sql`).
+2. **SQL Editor:** выполните по порядку файлы из [`supabase/migrations/`](supabase/migrations) (`20261106000001_schema.sql` … `20261109000001_protect_org_slug.sql`, шесть файлов).
 3. Демо-данные (необязательно, только для демо-проекта): выполните [`supabase/seed.sql`](supabase/seed.sql). Он создаёт двух вымышленных организаций, пользователей и записи; даты считаются от сегодняшнего дня. **Не запускайте seed на проекте с реальными пользователями:** он пересоздаёт демо-аккаунты.
 4. **Authentication → Providers → Email:** для демо можно отключить «Confirm email» (иначе регистрация потребует настроенную почту).
 5. **Authentication → URL Configuration:** Site URL — адрес сайта, Redirect URLs — `https://<домен>/auth/callback` (и `http://localhost:3000/auth/callback` для разработки).
@@ -107,6 +107,7 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | да | публичный (anon / publishable) ключ; безопасен для браузера, данные защищает RLS |
 | `NEXT_PUBLIC_SITE_URL` | нет | адрес сайта для ссылки подтверждения email |
 | `BOOKING_RATE_SALT` | нет | случайная строка-соль для хэша IP в лимитах публичной записи |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | нет | публичный ключ Cloudflare Turnstile: CAPTCHA на входе и регистрации (см. [docs/DEPLOY.md](docs/DEPLOY.md)) |
 
 Шаблон — [`.env.example`](.env.example). Файлы `.env*` (кроме `.env.example`) исключены из Git.
 

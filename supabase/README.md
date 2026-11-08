@@ -1,6 +1,7 @@
 # Supabase для Bookly
 
 - `migrations/` — схема (`…_schema.sql`) и RLS (`…_rls.sql`). Применяются по порядку.
+- `demo-reset.sql` — ночной сброс демо по расписанию (pg_cron), генерируется из `seed.sql`: `npm run demo:reset-sql`.
 - `seed.sql` — демо-данные (две организации, 6 пользователей, ~240 записей; даты относительно сегодняшнего дня).
 - `tests/` — проверки на встроенном Postgres (PGlite), Docker не нужен: `npm run test:db`.
 

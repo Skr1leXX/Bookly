@@ -24,9 +24,14 @@ $$;
 
 -- Reset: drop earlier demo data (organizations cascade to every business row).
 delete from public.organizations where id in (pg_temp.u('a', 1), pg_temp.u('a', 2));
+-- By id as well as by e-mail: a visitor may have changed the e-mail of a shared demo account.
 delete from auth.identities
-  where user_id in (select id from auth.users where email like '%@bookly.test' or email like '%@borodach.test');
-delete from auth.users where email like '%@bookly.test' or email like '%@borodach.test';
+  where user_id in (select id from auth.users
+                     where email like '%@bookly.test' or email like '%@borodach.test'
+                        or id in (select pg_temp.u('b', n) from generate_series(1, 6) n));
+delete from auth.users
+  where email like '%@bookly.test' or email like '%@borodach.test'
+     or id in (select pg_temp.u('b', n) from generate_series(1, 6) n);
 
 -- Users. The on_auth_user_created trigger creates their profiles.
 insert into auth.users (

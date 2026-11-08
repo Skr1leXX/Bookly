@@ -102,6 +102,11 @@ check("admin cannot remove the owner",
   (await run("pavel", `delete from public.organization_members where org_id='${ORG1}' and user_id='${users.alina}'`)).affected === 0);
 check("staff cannot rename org", (await run("anna", `update public.organizations set name='x' where id='${ORG1}'`)).affected === 0);
 check("admin can edit org", (await run("pavel", `update public.organizations set phone='+7 000' where id='${ORG1}'`)).affected === 1);
+check("nobody can change the public booking address through the API",
+  ((await run("pavel", `update public.organizations set slug='hacked' where id='${ORG1}'`)).error ?? "").includes("нельзя изменить") &&
+  ((await run("alina", `update public.organizations set slug='hacked' where id='${ORG1}'`)).error ?? "").includes("нельзя изменить"));
+check("editing the company without touching the slug still works", (await run("pavel", `update public.organizations set name='Новое имя', slug=slug where id='${ORG1}'`)).affected === 1);
+check("the slug can be changed without an API user (SQL Editor, seed)", !(await db.query(`update public.organizations set slug='lavanda-demo' where id='${ORG1}'`).then(() => null, (e) => e)));
 check("admin cannot delete org", (await run("pavel", `delete from public.organizations where id='${ORG1}'`)).affected === 0);
 check("user edits own profile", (await run("anna", `update public.profiles set full_name='A' where id='${users.anna}'`)).affected === 1);
 check("user cannot edit others' profile", (await run("anna", `update public.profiles set full_name='A' where id='${users.alina}'`)).affected === 0);

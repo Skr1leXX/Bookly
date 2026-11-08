@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useTransition } from "react";
+import { useActionState, useEffect, useTransition } from "react";
 import type { AuthState } from "@/app/(auth)/actions";
 import { Logo } from "@/components/layout/logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { resetTurnstile, Turnstile } from "./turnstile";
 
 export interface AuthField {
   name: string;
@@ -35,6 +36,9 @@ export function AuthForm({
   const [state, formAction, actionPending] = useActionState(action, {});
   const [transitioning, startTransition] = useTransition();
   const pending = actionPending || transitioning;
+  useEffect(() => {
+    if (state.error) resetTurnstile(); // the CAPTCHA token is single-use
+  }, [state]);
 
   return (
     <div className="w-full max-w-sm">
@@ -63,6 +67,7 @@ export function AuthForm({
                 <Input id={f.name} name={f.name} type={f.type} autoComplete={f.autoComplete} placeholder={f.placeholder} required />
               </div>
             ))}
+            <Turnstile />
             {state.error && (
               <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {state.error}

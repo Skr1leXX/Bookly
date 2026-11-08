@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "e2e:report": "playwright show-report e2e-report",
     "test": "npm run test:db",
-    "screenshots": "playwright test -c playwright.screenshots.config.ts"
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
+    "demo:reset-sql": "node scripts/make-demo-reset.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
